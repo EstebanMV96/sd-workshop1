@@ -1,0 +1,61 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.ssh.insert_key = false
+  config.vbguest.auto_update = false
+  config.vm.define :wb_server do |wb|
+    wb.vm.box = "centos1706_v0.2.0"
+
+    wb.vm.network "private_network", ip: "192.168.133.10"
+
+    wb.vm.provider :virtualbox do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "1024","--cpus", "1", "--name", "centos_server_web1" ]
+    end
+   wb.vm.provision :chef_solo do |chef|
+    chef.install = false
+    chef.cookbooks_path = "cookbooks"
+    chef.add_recipe "httpd"
+  end
+end
+config.vm.define :wb_server2 do |wb2|
+  wb2.vm.box = "centos1706_v0.2.0"
+  wb2.vm.network "private_network", ip: "192.168.133.11"
+
+  wb2.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "1024","--cpus", "1", "--name", "centos_server_web2" ]
+  end
+ wb2.vm.provision :chef_solo do |chef|
+  chef.install = false
+  chef.cookbooks_path = "cookbooks"
+  chef.add_recipe "httpd2"
+end
+end
+  config.vm.define :db_server do |db|
+    db.vm.box = "centos1706_v0.2.0"
+    db.vm.network "private_network", ip: "192.168.133.12"
+    db.vm.network "public_network", bridge: "eno1", ip:"192.168.0.29"
+    db.vm.provider :virtualbox do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "1024","--cpus", "1", "--name", "centos_client" ]
+    end
+    db.vm.provision :chef_solo do |chef|
+    chef.install = true
+    chef.cookbooks_path = "cookbooks"
+    chef.add_recipe "mysql"
+  end
+end
+config.vm.define :balanceador do |balanceador|
+  balanceador.vm.box = "centos1706_v0.2.0"
+  balanceador.vm.network "private_network", ip: "192.168.133.13"
+  balanceador.vm.network "public_network", bridge:  "eno1", ip:"192.168.0.28"
+  balanceador.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--memory", "1024","--cpus", "1", "--name", "centos_balanceador" ]
+  end
+  config.vm.provision :chef_solo do |chef|
+    chef.cookbooks_path = "cookbooks"
+    chef.add_recipe "balanceador"
+  end
+end
+end
